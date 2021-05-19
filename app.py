@@ -2,7 +2,7 @@ import main
 from flask import Flask, jsonify, abort, make_response, request
 import os
 import sys
-#from werkzeug.exceptions import Forbidden, HTTPException, NotFound, RequestTimeout, Unauthorized
+from werkzeug.exceptions import Forbidden, HTTPException, NotFound, RequestTimeout, Unauthorized
 
 PATH = os.path.abspath('')
 sys.path.append(PATH)
@@ -18,16 +18,10 @@ def manaba():
     password = request.form['password']
     return jsonify(main.app(userid, password))
 
-
-'''
-@app.route("/<key>", methods=["GET"])
-def main(key):
-    try:
-        return jsonify(responder.response(key))
-    except:
-        return jsonify(key+'?')
-
-
+@app.route("/")
+def method_error():
+    #{'userid': "ID" ,'password': "PASSWORD"}
+    return jsonify('405')
 @app.errorhandler(NotFound)
 def page_not_found_handler(e: HTTPException):
     return jsonify('404')
@@ -46,7 +40,7 @@ def forbidden_handler(e: HTTPException):
 @app.errorhandler(RequestTimeout)
 def request_timeout_handler(e: HTTPException):
     return jsonify('408')
-'''
+
 
 if __name__ == "__main__":
     app.run()
