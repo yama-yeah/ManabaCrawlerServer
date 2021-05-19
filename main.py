@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 import bs4
 import requests as rq
 from bs4 import BeautifulSoup, element
+from typing import List
+
 
 
 @dataclass
@@ -18,7 +20,7 @@ class Task:
     end: str
 
 
-Tasks = list[Task]
+Tasks = List[Task]
 
 
 @dataclass
@@ -34,12 +36,12 @@ class Course:
             self.tasks += other.tasks
 
 
-Courses = list[Course]
+Courses = List[Course]
 
 
 @dataclass
 class Courses(UserList):
-    data: list[Course] = field(default_factory=list)
+    data: List[Course] = field(default_factory=list)
 
     def __add__(self, other: Courses):
         for item in other:
@@ -105,10 +107,10 @@ def get_tasks(session: rq.Session, base_url: str, courses: Courses, query: str) 
         for row in table:
             row: element.Tag
             # 0 は項目、１以降が実際の課題
-            reports: list[element.Tag] = row.find_all('tr')[1:]
+            reports: List[element.Tag] = row.find_all('tr')[1:]
             # print(reports)
 
-            un_submitted_tasks = Tasks()
+            un_submitted_tasks:Tasks() =[] 
             for item in reports:
                 title: element.Tag
                 state: element.Tag
@@ -232,14 +234,20 @@ def app(userid, password):
                bs.find_all('td', class_='course')
                if course.find('a')]
 
-    couses_have_tasks += get_tasks(session, base_url, courses, '_report')
-    couses_have_tasks += get_tasks(session, base_url, courses, '_query')
-    couses_have_tasks += get_tasks(session, base_url, courses, '_survey')
+    couses_have_tasks.data+=get_tasks(session, base_url, courses, '_report').data
+    couses_have_tasks.data+=get_tasks(session, base_url, courses, '_query').data
+    couses_have_tasks.data+=get_tasks(session, base_url, courses, '_survey').data
     # print(couses_have_tasks)
+    #dic = couses_have_tasks
     dic = make_dictionary(couses_have_tasks)
+    '''
+    for i in couses_have_tasks:
+        print(i)
+    print('===========================================================')
+    '''
     return dic
+
 
 
 if __name__ == '__main__':
     # main()
-    print(app())

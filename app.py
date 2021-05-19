@@ -3,7 +3,6 @@ from flask import Flask, jsonify, abort, make_response, request
 import os
 import sys
 from werkzeug.exceptions import Forbidden, HTTPException, NotFound, RequestTimeout, Unauthorized
-
 PATH = os.path.abspath('')
 sys.path.append(PATH)
 
@@ -11,17 +10,20 @@ sys.path.append(PATH)
 app = Flask(__name__)
 
 
-@app.route("/manaba", methods=["POST"])
-def manaba():
-    #{'userid': "ID" ,'password': "PASSWORD"}
-    userid = request.form['userid']
-    password = request.form['password']
-    return jsonify(main.app(userid, password))
+
 
 @app.route("/")
 def hello():
     #{'userid': "ID" ,'password': "PASSWORD"}
     return jsonify('hello you must to post user infomation')
+
+@app.route("/", methods=["POST"])
+def manaba():
+    #{'userid': "ID" ,'password': "PASSWORD"}
+    userid = request.form['userid']
+    password = request.form['password']
+    return jsonify(main.app(userid, password))
+'''
 @app.errorhandler(NotFound)
 def page_not_found_handler(e: HTTPException):
     return jsonify('404')
@@ -40,7 +42,7 @@ def forbidden_handler(e: HTTPException):
 @app.errorhandler(RequestTimeout)
 def request_timeout_handler(e: HTTPException):
     return jsonify('408')
-
+'''
 
 if __name__ == "__main__":
     app.run()
