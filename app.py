@@ -11,7 +11,7 @@ sys.path.append(PATH)
 app = Flask(__name__)
 
 
-@app.route("/", methods=["POST"])
+@app.route("/manaba", methods=["POST"])
 def manaba():
     #{'userid': "ID" ,'password': "PASSWORD"}
     userid = request.form['userid']
@@ -19,9 +19,9 @@ def manaba():
     return jsonify(main.app(userid, password))
 
 @app.route("/")
-def method_error():
+def hello():
     #{'userid': "ID" ,'password': "PASSWORD"}
-    return jsonify('405')
+    return jsonify('hello you must to post user infomation')
 @app.errorhandler(NotFound)
 def page_not_found_handler(e: HTTPException):
     return jsonify('404')
