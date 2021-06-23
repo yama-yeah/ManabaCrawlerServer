@@ -8,7 +8,7 @@ import requests as rq
 from bs4 import BeautifulSoup, element
 from typing import List
 
-
+BASE_URL='https://manaba.fun.ac.jp/ct/'
 
 @dataclass
 class Task:
@@ -94,7 +94,8 @@ def main():
     # for task in course.tasks:
     #     print('-'*20)
     # print(task)
-    print(couses_have_tasks[2])
+    print(courses)
+    print("----------------")
 
 
 def get_tasks(session: rq.Session, base_url: str, courses: Courses, query: str) -> Courses:
@@ -104,6 +105,7 @@ def get_tasks(session: rq.Session, base_url: str, courses: Courses, query: str) 
         report = BeautifulSoup(session.get(report_url).text, 'lxml')
         course_name: str = report.find('a', id='coursename').get_text()
         table = report.find_all('table', class_='stdlist')
+        #print(table)
         for row in table:
             row: element.Tag
             # 0 は項目、１以降が実際の課題
@@ -174,7 +176,7 @@ def get_description(session: rq.Session, report_url: str, id: str) -> str:
     return td.text
 
 
-def make_dictionary(couses_have_tasks):
+def sub_dic(couses_have_tasks):
     #convert Course to dic 
     #original data style
     '''
@@ -206,16 +208,45 @@ def make_dictionary(couses_have_tasks):
             task_dic['end'] = task.end
             dic[course.course_name][task.title] = task_dic
     return dic
+def submode(session,bs):
+    couses_have_tasks = Courses()
+    courses = [course for course in
+               bs.find_all('td', class_='course')
+               if course.find('a')]
+    couses_have_tasks.data+=get_tasks(session, BASE_URL, courses, '_report').data
+    couses_have_tasks.data+=get_tasks(session, BASE_URL, courses, '_query').data
+    couses_have_tasks.data+=get_tasks(session, BASE_URL, courses, '_survey').data
+    # print(couses_have_tasks)
+    #dic = couses_have_tasks
+    dic = sub_dic(couses_have_tasks)
+    return dic
 
-
-def app(userid, password):
+def timemode(bs):
+    course_list= [name.find('a').get_text() if name.find('a') else "%void%" for name in bs.find_all('td', class_='course')]
+    dic={
+        "月":[],
+        "火":[],
+        "水":[],
+        "木":[],
+        "金":[],
+        "土":[]
+    }
+    i=0
+    keys=list(dic.keys())
+    print(len(course_list))
+    for course in course_list:
+        if(i==6):
+            i=0
+        dic[keys[i]].append(course)
+        i+=1
+    return dic
+def app(userid, password,mode):
     #config = configparser.ConfigParser()
     # config.read('./config.ini')
     USERID = userid
     PASSWORD = password
 
-    base_url = 'https://manaba.fun.ac.jp/ct/'
-    url = base_url + 'login'
+    url = BASE_URL + 'login'
     login_data = {
         'userid': USERID,
         'password': PASSWORD
@@ -223,29 +254,13 @@ def app(userid, password):
 
     session = rq.session()
     session.get(url)
-
     login = session.post(url, data=login_data)
-
-    couses_have_tasks = Courses()
-
     bs = BeautifulSoup(login.text, 'lxml')
-
-    courses = [course for course in
-               bs.find_all('td', class_='course')
-               if course.find('a')]
-
-    couses_have_tasks.data+=get_tasks(session, base_url, courses, '_report').data
-    couses_have_tasks.data+=get_tasks(session, base_url, courses, '_query').data
-    couses_have_tasks.data+=get_tasks(session, base_url, courses, '_survey').data
-    # print(couses_have_tasks)
-    #dic = couses_have_tasks
-    dic = make_dictionary(couses_have_tasks)
-    '''
-    for i in couses_have_tasks:
-        print(i)
-    print('===========================================================')
-    '''
+    #######
+    
+    #######
+    if(mode=="sub"):
+        dic=submode(session,bs)
+    elif(mode=="time"):
+        dic=timemode(bs)
     return dic
-
-
-
