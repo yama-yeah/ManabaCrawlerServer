@@ -16,7 +16,10 @@ app = Flask(__name__)
 def hello():
     #{'userid': "ID" ,'password': "PASSWORD"}
     return jsonify('hello you must to post user infomation')
-
+@app.route("/timetable")
+def hellotime():
+    #{'userid': "ID" ,'password': "PASSWORD"}
+    return jsonify('hello you must to post user infomation')
 @app.route("/", methods=["POST"])
 def sub():
     #{'userid': "ID" ,'password': "PASSWORD"}
