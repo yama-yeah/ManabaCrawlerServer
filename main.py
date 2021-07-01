@@ -149,6 +149,10 @@ def is_unsubmitted(state: element.Tag, query: str) -> bool:
             acception = div.get_text()
             submission = deadline.get_text()
         else:
+            try:
+                print(deadline.get_text())
+            except:
+                pass
             return False
     if query in ['_query', '_survey']:
         if (td := state.get_text()) and (deadline := state.find('span', class_='deadline')):
