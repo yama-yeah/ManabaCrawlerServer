@@ -34,7 +34,7 @@ def time():
     return jsonify(main.app(userid, password,"time"))
 
 @app.route("/t4t5u0", methods=["POST"])
-def time():
+def t4t5u0():
     #{'userid': "ID" ,'password': "PASSWORD"}
     userid = request.form['userid']
     password = request.form['password']
