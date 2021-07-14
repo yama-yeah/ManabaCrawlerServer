@@ -20,6 +20,7 @@ class Task:
     end: str
 
 
+
 Tasks = List[Task]
 
 
@@ -212,6 +213,42 @@ def sub_dic(couses_have_tasks):
             task_dic['end'] = task.end
             dic[course.course_name][task.title] = task_dic
     return dic
+
+def t4t5u0_list(couses_have_tasks):
+    #convert Course to dic 
+    #original data style
+    '''
+    Course(
+        course_name='線形代数学Ⅰ 1-IJKL', 
+        tasks=[Task(id=104270, description='', 
+        title='演習課題５', state='未提出', 
+        start='2021-05-17 18:00', 
+        end='2021-05-21 00:00')]
+    )'''
+    #list style
+    '''
+    [
+        {
+            "course_name": "技術者倫理 3",
+            "end": "2021-05-25 00:00",
+            "start": "2021-05-18 13:40",
+            "state": "未提出",
+            "task_title": "第6回ミニエッセイ課題",
+        }
+    ]
+    '''
+    list = []
+    for course in couses_have_tasks:
+        for task in course.tasks:
+            task_dic={}
+            task_dic['state'] = task.state
+            task_dic['start'] = task.start
+            task_dic['end'] = task.end
+            task_dic['course_name'] = course.course_name
+            task_dic['task_title'] = task.title
+            list.append(task_dic)
+    return list
+
 def submode(session,bs):
     couses_have_tasks = Courses()
     courses = [course for course in
@@ -255,7 +292,7 @@ def t4t5u0(session,bs):
     couses_have_tasks.data+=get_tasks(session, BASE_URL, courses, '_survey').data
     # print(couses_have_tasks)
     #dic = couses_have_tasks
-    return list(map(lambda x: x.to_dict(), couses_have_tasks))
+    return t4t5u0_list(couses_have_tasks)
 
 def app(userid, password,mode):
     #config = configparser.ConfigParser()
@@ -283,3 +320,4 @@ def app(userid, password,mode):
     elif(mode=="t4t5u0"):
         dic=t4t5u0(session,bs)
     return dic
+
