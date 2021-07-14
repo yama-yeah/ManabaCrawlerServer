@@ -32,6 +32,13 @@ def time():
     userid = request.form['userid']
     password = request.form['password']
     return jsonify(main.app(userid, password,"time"))
+
+@app.route("/t4t5u0", methods=["POST"])
+def time():
+    #{'userid': "ID" ,'password': "PASSWORD"}
+    userid = request.form['userid']
+    password = request.form['password']
+    return jsonify(main.app(userid, password,"t4t5u0"))
 '''
 @app.errorhandler(NotFound)
 def page_not_found_handler(e: HTTPException):

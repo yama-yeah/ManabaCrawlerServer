@@ -280,6 +280,6 @@ def app(userid, password,mode):
         dic=submode(session,bs)
     elif(mode=="time"):
         dic=timemode(bs)
-    elif(mode==t4t5u0):
+    elif(mode=="t4t5u0"):
         dic=t4t5u0(session,bs)
     return dic
