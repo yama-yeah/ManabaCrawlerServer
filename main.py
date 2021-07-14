@@ -244,6 +244,19 @@ def timemode(bs):
         dic[keys[i]].append(course)
         i+=1
     return dic
+
+def t4t5u0(session,bs):
+    couses_have_tasks = Courses()
+    courses = [course for course in
+               bs.find_all('td', class_='course')
+               if course.find('a')]
+    couses_have_tasks.data+=get_tasks(session, BASE_URL, courses, '_report').data
+    couses_have_tasks.data+=get_tasks(session, BASE_URL, courses, '_query').data
+    couses_have_tasks.data+=get_tasks(session, BASE_URL, courses, '_survey').data
+    # print(couses_have_tasks)
+    #dic = couses_have_tasks
+    return list(map(lambda x: x.to_dict(), couses_have_tasks))
+
 def app(userid, password,mode):
     #config = configparser.ConfigParser()
     # config.read('./config.ini')
@@ -267,4 +280,6 @@ def app(userid, password,mode):
         dic=submode(session,bs)
     elif(mode=="time"):
         dic=timemode(bs)
+    elif(mode==t4t5u0):
+        dic=t4t5u0(session,bs)
     return dic
