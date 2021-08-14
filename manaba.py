@@ -43,9 +43,9 @@ class Task:
 
 @dataclass
 class Course:
-    course_id : int  # int
-    course_name : str  # str
-    course_url : str  # str BASE_URL+course_id
+    course_id: int  # int
+    course_name: str  # str
+    course_url: str  # str BASE_URL+course_id
 
     def to_dict(self):
         return {
@@ -104,9 +104,9 @@ class Manaba:
         return (main.find_all('td', class_='course'), others.find_all('span', class_='courselist-title'))
 
     def get_courses_data(self, main_courses, other_courses):
-        main_name = list(map(lambda x: x.find('a').get_text() if x.find(
+        main_name = list(map(lambda x: x.find('a').get_text().replace('\u3000','') if x.find(
             'a') else "%void%", main_courses))  # if course is empty, return %void%
-        other_name = list(map(lambda x: x.find('a').get_text(), other_courses))
+        other_name = list(map(lambda x: x.find('a').get_text().replace('\u3000',''), other_courses))
         main_id = list(map(lambda x: x.find('a')['href'] if x.find(
             'a') else "%void%", main_courses))
         other_id = list(map(lambda x: x.find('a')['href'], other_courses))
@@ -126,8 +126,8 @@ class Manaba:
             for t in self.TASK_TYPE:
                 task_html = BeautifulSoup(
                     raw[i][j], 'lxml',)
-                    
-                if(i==0):
+
+                if(i == 0):
                     #print(BeautifulSoup(raw[-3][2], 'lxml',).find_all('tr')[1:-1][0].find_all('td',class_='center')[2:])
                     pass
                 # salvage task_id,task_title,task_url,state,start,end,remain,description
@@ -135,7 +135,7 @@ class Manaba:
                 # split html for tasks
                 task_html = task_html.find_all(
                     'tr')[1:-1]  # erase header & footer
-                task_html=list(reversed(task_html))
+                task_html = list(reversed(task_html))
                 course_id = int(id.strip('course_'))
                 if not task_html:
                     j += 1
@@ -144,17 +144,17 @@ class Manaba:
                 task_url_list = list(
                     map(lambda x: BASE_URL+x.find('a')['href'], task_html))
                 task_title_list = list(
-                    map(lambda x: x.find('a').get_text(), task_html))
+                    map(lambda x: x.find('a').get_text().replace('\u3000',''), task_html))
                 task_id_list = list(
                     map(lambda x: x.strip(BASE_URL+id+t+'_'), task_url_list))
                 task_state_list = list(
                     map(lambda x: self.get_task_state(x), task_html))
-                if(t=='_query'):
-                    p=1
-                elif(t=='_report'):
-                    p=2
+                if(t == '_query'):
+                    p = 1
+                elif(t == '_report'):
+                    p = 2
                 else:
-                    p=1
+                    p = 1
                 task_start_end_list = list(
                     map(lambda x: x.find_all('td', class_='center')[p:], task_html))
                 task_start_list = [x[0].get_text()
@@ -210,36 +210,36 @@ class Manaba:
         return loop.run_until_complete(self.get_tasks_html_async())
 
     def get_timetable(self):
-        #main
-        keys=['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-        i=0
+        # main
+        keys = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        i = 0
         for id, name in zip(self.main_courses_id, self.main_courses_name):
-            if(i==6):
-                i=0
+            if(i == 6):
+                i = 0
             if(id == '%void%'):
-                id=0
-                url='%void%'
+                id = 0
+                url = '%void%'
             else:
-                url=BASE_URL+id
-                id=int(id.strip('course_'))
-            course=Course(id,name,url)
+                url = BASE_URL+id
+                id = int(id.strip('course_'))
+            course = Course(id, name, url)
             TimeTable[keys[i]].append(course.to_dict())
-            i+=1
-        #other
+            i += 1
+        # other
         for id, name in zip(self.other_courses_id, self.other_courses_name):
             if(id == '%void%'):
-                id=0
-                url='%void%'
+                id = 0
+                url = '%void%'
             else:
-                url=BASE_URL+id
-                id=int(id.strip('course_'))
-            course=Course(id,name,url)
+                url = BASE_URL+id
+                id = int(id.strip('course_'))
+            course = Course(id, name, url)
             TimeTable['Other'].append(course.to_dict())
         return TimeTable
 
 
-#print(b)
-#print(t2-t1)
+# print(b)
+# print(t2-t1)
 
 
 """
