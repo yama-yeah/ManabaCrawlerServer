@@ -1,26 +1,248 @@
-from collections import UserList, defaultdict
-import configparser
-from re import sub
-from types import MethodType
-from dataclasses import dataclass, field
-import bs4
-import requests as rq
-from bs4 import BeautifulSoup, element
-from typing import List
+from asyncio import tasks
 
-BASE_URL='https://manaba.fun.ac.jp/ct/'
+from re import sub
+from dataclasses import dataclass, field
+import requests as rq
+from bs4 import BeautifulSoup
+from typing import List
+import aiohttp
+import asyncio
+
+BASE_URL = 'https://manaba.fun.ac.jp/ct/'
+
 
 @dataclass
 class Task:
-    id: int
-    description: str
-    title: str
+    task_id: int
+    task_title: str
+    task_url: str
+    task_type: str
+    course_id: int
+    course_name: str
     state: str
     start: str
     end: str
+    #remain: str
+    #description: str
+
+    def to_dict(self):
+        return {
+            "task_id": self.task_id,
+            "task_title": self.task_title,
+            "task_url": self.task_url,
+            "task_type": self.task_type,
+            "course_id": self.course_id,
+            "course_name": self.course_name,
+            "state": self.state,
+            "start": self.start,
+            "end": self.end,
+            # "remain": self.remain,
+            # "description": self.description 重くなりそうだから消しておく
+        }
 
 
+@dataclass
+class Course:
+    course_id : int  # int
+    course_name : str  # str
+    course_url : str  # str BASE_URL+course_id
 
+    def to_dict(self):
+        return {
+            "course_id": self.course_id,
+            "course_name": self.course_name,
+            "course_url": self.course_url
+        }
+
+
+Courses = List[Course]
+
+TimeTable = {'Mon': [], 'Tue': [], 'Wed': [],
+             'Thu': [], 'Fri': [], 'Sat': [], 'Other': []}
+#ALL: List[Courses_DICT]
+
+
+class Manaba:
+    BASE_URL = 'https://manaba.fun.ac.jp/ct/'
+    TASK_TYPE = ['_query', '_survey', '_report']
+
+    def __init__(self, userid, password):
+        url = BASE_URL + 'login'
+        self.login_data = {
+            'userid': userid,
+            'password': password
+        }
+        self.session = rq.Session()
+        self.session.get(url)
+        login = self.session.post(url, data=self.login_data)
+        self.bs = BeautifulSoup(login.text, 'lxml')
+        #self.courses: list[element.Tag] = [course for course in self.bs.find_all('td', class_='course')if course.find('a')]
+        self.success = self.check_login(login)
+        if self.success:
+            # split body to main and others
+            main = self.bs.find('table', class_='stdlist')
+            others = self.bs.find('table', class_='stdlist courselist')
+            main_courses, other_courses = self.split_courses(main, others)
+            # get courses data(course_id,course_name)
+            main_data, other_data = self.get_courses_data(
+                main_courses, other_courses)
+            self.main_courses_id, self.main_courses_name = main_data
+            self.other_courses_id, self.other_courses_name = other_data
+        else:
+            print('login failed')
+
+    def check_login(self, login):
+        # print(self.bs)
+        return self.bs.find('div', class_='login-body') is None
+
+    def access_course(self):
+        # 多分実装しない
+        # ニュースを引っ張ってくる
+        pass
+
+    def split_courses(self, main, others):
+        return (main.find_all('td', class_='course'), others.find_all('span', class_='courselist-title'))
+
+    def get_courses_data(self, main_courses, other_courses):
+        main_name = list(map(lambda x: x.find('a').get_text() if x.find(
+            'a') else "%void%", main_courses))  # if course is empty, return %void%
+        other_name = list(map(lambda x: x.find('a').get_text(), other_courses))
+        main_id = list(map(lambda x: x.find('a')['href'] if x.find(
+            'a') else "%void%", main_courses))
+        other_id = list(map(lambda x: x.find('a')['href'], other_courses))
+        return ((main_id, main_name), (other_id, other_name))
+
+    def get_tasks(self):
+        tasks = []
+        raw = self.run_async()
+        # get main_tasks
+        i = 0
+        # print(len(raw),len(raw[0]))
+        for id, name in zip(self.main_courses_id+self.other_courses_id, self.main_courses_name+self.other_courses_id):
+            # access each task
+            if(id == '%void%'):
+                continue
+            j = 0
+            for t in self.TASK_TYPE:
+                task_html = BeautifulSoup(
+                    raw[i][j], 'lxml',)
+                    
+                if(i==0):
+                    #print(BeautifulSoup(raw[-3][2], 'lxml',).find_all('tr')[1:-1][0].find_all('td',class_='center')[2:])
+                    pass
+                # salvage task_id,task_title,task_url,state,start,end,remain,description
+                # already have datas are task_id task_name task_type course_id course_name
+                # split html for tasks
+                task_html = task_html.find_all(
+                    'tr')[1:-1]  # erase header & footer
+                task_html=list(reversed(task_html))
+                course_id = int(id.strip('course_'))
+                if not task_html:
+                    j += 1
+                    continue
+                # url=BASE_URL+course_id+t+'_'+task_id
+                task_url_list = list(
+                    map(lambda x: BASE_URL+x.find('a')['href'], task_html))
+                task_title_list = list(
+                    map(lambda x: x.find('a').get_text(), task_html))
+                task_id_list = list(
+                    map(lambda x: x.strip(BASE_URL+id+t+'_'), task_url_list))
+                task_state_list = list(
+                    map(lambda x: self.get_task_state(x), task_html))
+                if(t=='_query'):
+                    p=1
+                elif(t=='_report'):
+                    p=2
+                else:
+                    p=1
+                task_start_end_list = list(
+                    map(lambda x: x.find_all('td', class_='center')[p:], task_html))
+                task_start_list = [x[0].get_text()
+                                   for x in task_start_end_list]
+                task_end_list = [x[1].get_text() for x in task_start_end_list]
+                task_type = t.strip('_')
+                course_name = name
+                tasks += list(map(lambda task_id, task_title, task_url, task_state, task_start, task_end: Task(task_id, task_title, task_url, task_type, course_id, course_name, task_state, task_start, task_end).to_dict(),
+                                  task_id_list, task_title_list, task_url_list, task_state_list, task_start_list, task_end_list))
+                j += 1
+            i += 1
+        return tasks
+    '''
+    task_id: int
+    task_title: str
+    task_url: str
+    task_type: str
+    course_id: int
+    course_name: str
+    state: str
+    start: str
+    end: str'''
+
+    def get_task_state(self, html):
+        if html.find('span', class_='expired'):
+            return '提出失敗'
+        elif html.find('strong'):
+            return '提出完了'
+        else:
+            return '受付中'
+
+    async def get_tasks_html_async(self):
+        async def a(id, ss):
+            async with ss.get(BASE_URL+id+self.TASK_TYPE[0]) as resp:
+                q = await resp.text()
+            async with ss.get(BASE_URL+id+self.TASK_TYPE[1]) as resp:
+                r = await resp.text()
+            async with ss.get(BASE_URL+id+self.TASK_TYPE[2]) as resp:
+                s = await resp.text()
+            return (q, r, s)
+        async with aiohttp.ClientSession() as session:
+            ss = session
+            await ss.get(BASE_URL+'login')
+            await ss.post(BASE_URL+'login', data=self.login_data)
+            tasks = [a(id, ss) for id in self.main_courses_id +
+                     self.other_courses_id if id != '%void%']
+            res = await asyncio.gather(*tasks)
+        return res
+
+    def run_async(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        return loop.run_until_complete(self.get_tasks_html_async())
+
+    def get_timetable(self):
+        #main
+        keys=['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        i=0
+        for id, name in zip(self.main_courses_id, self.main_courses_name):
+            if(i==6):
+                i=0
+            if(id == '%void%'):
+                id=0
+                url='%void%'
+            else:
+                url=BASE_URL+id
+                id=int(id.strip('course_'))
+            course=Course(id,name,url)
+            TimeTable[keys[i]].append(course.to_dict())
+            i+=1
+        #other
+        for id, name in zip(self.other_courses_id, self.other_courses_name):
+            if(id == '%void%'):
+                id=0
+                url='%void%'
+            else:
+                url=BASE_URL+id
+                id=int(id.strip('course_'))
+            course=Course(id,name,url)
+            TimeTable['Other'].append(course.to_dict())
+        return TimeTable
+
+
+#print(b)
+#print(t2-t1)
+
+
+"""
 Tasks = List[Task]
 
 
@@ -47,7 +269,7 @@ class Courses(UserList):
     def __add__(self, other: Courses):
         for item in other:
             item: Course
-            # 科目名が含まれているとき
+            # 科目名が含まれているときget
             if (idx := self.get_index(item.course_name)) != -1:
                 self.data[idx] += item
             else:
@@ -321,3 +543,4 @@ def app(userid, password,mode):
         dic=t4t5u0(session,bs)
     return dic
 
+"""

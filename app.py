@@ -1,64 +1,52 @@
-import main
-from flask import Flask, jsonify, abort, make_response, request
+from manaba import Manaba
+from fastapi import FastAPI
 import os
 import sys
 from werkzeug.exceptions import Forbidden, HTTPException, NotFound, RequestTimeout, Unauthorized
+import uvicorn
+from pydantic import BaseModel
 PATH = os.path.abspath('')
 sys.path.append(PATH)
 
 
-app = Flask(__name__)
-app.config['JSON_AS_ASCII'] = False
+app = FastAPI()
+#app.config['JSON_AS_ASCII'] = False
 
 
+class User(BaseModel):
+    userid: str
+    password: str
 
-@app.route("/")
+
+@app.get("/")
 def hello():
     #{'userid': "ID" ,'password': "PASSWORD"}
-    return jsonify('hello you must to post user infomation')
-@app.route("/timetable")
+    return 'hello you must to post user infomation'
+
+
+@app.get("/timetable")
 def hellotime():
     #{'userid': "ID" ,'password': "PASSWORD"}
-    return jsonify('hello you must to post user infomation')
-@app.route("/", methods=["POST"])
-def sub():
+    return 'hello you must to post user infomation'
+
+
+@app.post("/")
+def sub(user: User):
     #{'userid': "ID" ,'password': "PASSWORD"}
-    userid = request.form['userid']
-    password = request.form['password']
-    return jsonify(main.app(userid, password,"sub"))
-@app.route("/timetable", methods=["POST"])
-def time():
+    userid = user.userid
+    password = user.password
+    manaba = Manaba(userid, password)
+    return manaba.get_tasks()
+
+
+@app.post("/timetable")
+def time(user: User):
     #{'userid': "ID" ,'password': "PASSWORD"}
-    userid = request.form['userid']
-    password = request.form['password']
-    return jsonify(main.app(userid, password,"time"))
+    userid = user.userid
+    password = user.password
+    manaba = Manaba(userid, password)
+    return manaba.get_timetable()
 
-@app.route("/t4t5u0", methods=["POST"])
-def t4t5u0():
-    #{'userid': "ID" ,'password': "PASSWORD"}
-    userid = request.form['userid']
-    password = request.form['password']
-    return jsonify(main.app(userid, password,"t4t5u0"))
-'''
-@app.errorhandler(NotFound)
-def page_not_found_handler(e: HTTPException):
-    return jsonify('404')
-
-
-@app.errorhandler(Unauthorized)
-def unauthorized_handler(e: HTTPException):
-    return jsonify('401')
-
-
-@app.errorhandler(Forbidden)
-def forbidden_handler(e: HTTPException):
-    return jsonify('403')
-
-
-@app.errorhandler(RequestTimeout)
-def request_timeout_handler(e: HTTPException):
-    return jsonify('408')
-'''
 
 if __name__ == "__main__":
-    app.run()
+    uvicorn.run(app)
