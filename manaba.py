@@ -1,7 +1,6 @@
-from asyncio import tasks
-
+from datetime import datetime, timedelta, timezone
 from re import sub
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import requests as rq
 from bs4 import BeautifulSoup
 from typing import List
@@ -22,7 +21,7 @@ class Task:
     state: str
     start: str
     end: str
-    #remain: str
+    remain: str
     #description: str
 
     def to_dict(self):
@@ -36,7 +35,7 @@ class Task:
             "state": self.state,
             "start": self.start,
             "end": self.end,
-            # "remain": self.remain,
+            "remain": self.remain,
             # "description": self.description 重くなりそうだから消しておく
         }
 
@@ -104,17 +103,21 @@ class Manaba:
         return (main.find_all('td', class_='course'), others.find_all('span', class_='courselist-title'))
 
     def get_courses_data(self, main_courses, other_courses):
-        main_name = list(map(lambda x: x.find('a').get_text().replace('\u3000','') if x.find(
+        main_name = list(map(lambda x: x.find('a').get_text().replace('\u3000', '') if x.find(
             'a') else "%void%", main_courses))  # if course is empty, return %void%
-        other_name = list(map(lambda x: x.find('a').get_text().replace('\u3000',''), other_courses))
+        other_name = list(map(lambda x: x.find(
+            'a').get_text().replace('\u3000', ''), other_courses))
         main_id = list(map(lambda x: x.find('a')['href'] if x.find(
             'a') else "%void%", main_courses))
         other_id = list(map(lambda x: x.find('a')['href'], other_courses))
         return ((main_id, main_name), (other_id, other_name))
 
-    def get_tasks(self):
+    def get_tasks(self, exception_id_list=['%void%'], least_time='%void%'):
         tasks = []
-        raw = self.run_async()
+        if(self.success):
+            raw = self.run_async()
+        else:
+            return {'tasks': [], 'status': 'failed'}
         # get main_tasks
         i = 0
         # print(len(raw),len(raw[0]))
@@ -122,11 +125,13 @@ class Manaba:
             # access each task
             if(id == '%void%'):
                 continue
+            course_id = int(id.strip('course_'))
+            if(course_id in exception_id_list):
+                continue
             j = 0
             for t in self.TASK_TYPE:
                 task_html = BeautifulSoup(
                     raw[i][j], 'lxml',)
-
                 if(i == 0):
                     #print(BeautifulSoup(raw[-3][2], 'lxml',).find_all('tr')[1:-1][0].find_all('td',class_='center')[2:])
                     pass
@@ -136,7 +141,7 @@ class Manaba:
                 task_html = task_html.find_all(
                     'tr')[1:-1]  # erase header & footer
                 task_html = list(reversed(task_html))
-                course_id = int(id.strip('course_'))
+
                 if not task_html:
                     j += 1
                     continue
@@ -144,7 +149,7 @@ class Manaba:
                 task_url_list = list(
                     map(lambda x: BASE_URL+x.find('a')['href'], task_html))
                 task_title_list = list(
-                    map(lambda x: x.find('a').get_text().replace('\u3000',''), task_html))
+                    map(lambda x: x.find('a').get_text().replace('\u3000', ''), task_html))
                 task_id_list = list(
                     map(lambda x: x.strip(BASE_URL+id+t+'_'), task_url_list))
                 task_state_list = list(
@@ -160,13 +165,18 @@ class Manaba:
                 task_start_list = [x[0].get_text()
                                    for x in task_start_end_list]
                 task_end_list = [x[1].get_text() for x in task_start_end_list]
-                task_type = t.strip('_')
-                course_name = name
-                tasks += list(map(lambda task_id, task_title, task_url, task_state, task_start, task_end: Task(task_id, task_title, task_url, task_type, course_id, course_name, task_state, task_start, task_end).to_dict(),
-                                  task_id_list, task_title_list, task_url_list, task_state_list, task_start_list, task_end_list))
+                remain_list = list(
+                    map(lambda x: self.get_remaining_time(x), task_end_list))
+                for k in range(len(task_start_list)):
+                    if(self.check_task_time(task_end_list[k], least_time)):
+                        task = Task(task_id_list[k], task_title_list[k], task_url_list[k], t, course_id, name,
+                                    task_state_list[k], task_start_list[k], task_end_list[k], remain_list[k])
+                        tasks.append(task.to_dict())
+                    else:
+                        break
                 j += 1
             i += 1
-        return tasks
+        return {'tasks': tasks, 'status': 'success'}
     '''
     task_id: int
     task_title: str
@@ -185,6 +195,24 @@ class Manaba:
             return '提出完了'
         else:
             return '受付中'
+
+    def get_remaining_time(self, end: str) -> str:
+        # タイムゾーンの生成
+        JST = timezone(timedelta(hours=+9), 'JST')
+        end_time = datetime.strptime(end, '%Y-%m-%d %H:%M').replace(tzinfo=JST)
+        now_time = datetime.now(JST)
+        residual = end_time - now_time
+        return str(residual)
+
+    def check_task_time(self, end, least):
+        if(end == '%void%' or least == '%void%'):
+            return True
+        end_time = datetime.strptime(end, '%Y-%m-%d %H:%M')
+        least_time = datetime.strptime(least, '%Y-%m-%d %H:%M')
+        if(end_time >= least_time):
+            return True
+        else:
+            return False
 
     async def get_tasks_html_async(self):
         async def a(id, ss):
@@ -210,6 +238,8 @@ class Manaba:
         return loop.run_until_complete(self.get_tasks_html_async())
 
     def get_timetable(self):
+        if(not self.success):
+            return {'timetable': {}, 'status': 'failed'}
         # main
         keys = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
         i = 0
@@ -235,7 +265,7 @@ class Manaba:
                 id = int(id.strip('course_'))
             course = Course(id, name, url)
             TimeTable['Other'].append(course.to_dict())
-        return TimeTable
+        return {'timetable': TimeTable, 'status': 'success'}
 
 
 # print(b)

@@ -11,35 +11,45 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 
 
-
 @app.route("/")
 def hello():
     #{'userid': "ID" ,'password': "PASSWORD"}
     return jsonify('hello you must to post user infomation')
+
+
 @app.route("/timetable")
 def hellotime():
     #{'userid': "ID" ,'password': "PASSWORD"}
     return jsonify('hello you must to post user infomation')
+
+
 @app.route("/", methods=["POST"])
 def sub():
     #{'userid': "ID" ,'password': "PASSWORD"}
+    keys = request.form.keys()
     userid = request.form['userid']
     password = request.form['password']
-    manaba=Manaba(userid,password)
-    return jsonify(manaba.get_tasks())
+    least = '%void%'
+    exception_id = ['%void%']
+    if('least' in keys):
+        least = request.form['least']
+    if('exception_id' in keys):
+        exception_id = request.form['exception_id']
+    manaba = Manaba(userid, password)
+    return jsonify(manaba.get_tasks(exception_id, least))
+
+
 @app.route("/timetable", methods=["POST"])
 def time():
     #{'userid': "ID" ,'password': "PASSWORD"}
     userid = request.form['userid']
     password = request.form['password']
-    manaba=Manaba(userid,password)
+    manaba = Manaba(userid, password)
     return jsonify(manaba.get_timetable())
 
 
-
-
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
 
 '''
 from manaba import Manaba
