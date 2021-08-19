@@ -1,3 +1,4 @@
+import re
 from manaba import Manaba
 from flask import Flask, jsonify, abort, make_response, request
 import os
@@ -47,6 +48,18 @@ def time():
     manaba = Manaba(userid, password)
     return jsonify(manaba.get_timetable())
 
+@app.route('/login',methods=['POST'])
+def login():
+    #{'userid': "ID" ,'password': "PASSWORD"}
+    userid = request.form['userid']
+    password = request.form['password']
+    manaba = Manaba(userid, password)
+    status={'status':''}
+    if(manaba.check_login()):
+        status['status']='success'
+    else:
+        status['status']='failed'
+    return jsonify(status)
 
 if __name__ == "__main__":
     app.run(debug=True)
