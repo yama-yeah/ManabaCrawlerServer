@@ -76,7 +76,7 @@ class Manaba:
         login = self.session.post(url, data=self.login_data)
         self.bs = BeautifulSoup(login.text, 'lxml')
         #self.courses: list[element.Tag] = [course for course in self.bs.find_all('td', class_='course')if course.find('a')]
-        self.success = self.check_login(login)
+        self.success = self.check_login()
         if self.success:
             # split body to main and others
             main = self.bs.find('table', class_='stdlist')
@@ -90,7 +90,7 @@ class Manaba:
         else:
             print('login failed')
 
-    def check_login(self, login):
+    def check_login(self):
         # print(self.bs)
         return self.bs.find('div', class_='login-body') is None
 
