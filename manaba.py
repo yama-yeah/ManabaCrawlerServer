@@ -121,7 +121,7 @@ class Manaba:
         # get main_tasks
         i = 0
         # print(len(raw),len(raw[0]))
-        for id, name in zip(self.main_courses_id+self.other_courses_id, self.main_courses_name+self.other_courses_id):
+        for id, name in zip(self.main_courses_id+self.other_courses_id, self.main_courses_name+self.other_courses_name):
             # access each task
             if(id == '%void%'):
                 continue
@@ -162,9 +162,10 @@ class Manaba:
                     p = 1
                 task_start_end_list = list(
                     map(lambda x: x.find_all('td', class_='center')[p:], task_html))
-                task_start_list = [x[0].get_text()
-                                   for x in task_start_end_list]
-                task_end_list = [x[1].get_text() for x in task_start_end_list]
+                task_start_list = [x[0].get_text() if x[0].get_text() != '' else '0000-01-01'
+                                   for x in task_start_end_list ]
+                task_end_list = [x[1].get_text() if x[1].get_text() != '' else '0000-01-01'
+                for x in task_start_end_list]
                 remain_list = list(
                     map(lambda x: self.get_remaining_time(x), task_end_list))
                 for k in range(len(task_start_list)):
