@@ -162,9 +162,9 @@ class Manaba:
                     p = 1
                 task_start_end_list = list(
                     map(lambda x: x.find_all('td', class_='center')[p:], task_html))
-                task_start_list = [x[0].get_text() if x[0].get_text() != '' else '0000-01-01'
+                task_start_list = [x[0].get_text() if x[0].get_text() != '' else '0000-01-01 00:00'
                                    for x in task_start_end_list ]
-                task_end_list = [x[1].get_text() if x[1].get_text() != '' else '0000-01-01'
+                task_end_list = [x[1].get_text() if x[1].get_text() != '' else '0000-01-01 00:00'
                 for x in task_start_end_list]
                 remain_list = list(
                     map(lambda x: self.get_remaining_time(x), task_end_list))
