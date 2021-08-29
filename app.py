@@ -4,6 +4,7 @@ from flask import Flask, jsonify, abort, make_response, request
 import os
 import sys
 from werkzeug.exceptions import Forbidden, HTTPException, NotFound, RequestTimeout, Unauthorized
+import ast
 PATH = os.path.abspath('')
 sys.path.append(PATH)
 
@@ -35,7 +36,8 @@ def sub():
     if('least' in keys):
         least = request.form['least']
     if('exception_id' in keys):
-        exception_id = request.form['exception_id']
+        _id_list=request.form['exception_id']
+        exception_id = ast.literal_eval(_id_list)
     manaba = Manaba(userid, password)
     return jsonify(manaba.get_tasks(exception_id, least))
 
