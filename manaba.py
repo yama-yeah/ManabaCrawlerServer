@@ -148,10 +148,11 @@ class Manaba:
                 # url=BASE_URL+course_id+t+'_'+task_id
                 task_url_list = list(
                     map(lambda x: BASE_URL+x.find('a')['href'], task_html))
+                #print(list(filter(lambda x: x=='https://manaba.fun.ac.jp/ct/course_102052_query_102105', task_url_list)))
                 task_title_list = list(
                     map(lambda x: x.find('a').get_text().replace('\u3000', ''), task_html))
                 task_id_list = list(
-                    map(lambda x: x.strip(BASE_URL+id+t+'_'), task_url_list))
+                    map(lambda x: x.split('_')[-1], task_url_list))
                 task_state_list = list(
                     map(lambda x: self.get_task_state(x), task_html))
                 if(t == '_query'):
