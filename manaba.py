@@ -258,17 +258,20 @@ class Manaba:
         # main
         keys = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
         i = 0
-        for id, name in zip(self.main_courses_id, self.main_courses_name):
+        for ids, names in zip(self.main_courses_id, self.main_courses_name):
+            courses=[]
             if(i == 6):
                 i = 0
-            if(id == '%void%'):
-                id = 0
-                url = '%void%'
-            else:
-                url = BASE_URL+id
-                id = int(id.strip('course_'))
-            course = Course(id, name, url)
-            TimeTable[keys[i]].append(course.to_dict())
+            for id,name in zip(ids,names):
+                if(id == '%void%'):
+                    id = 0
+                    url = '%void%'
+                else:
+                    url = BASE_URL+id
+                    id = int(id.strip('course_'))
+                course = Course(id, name, url)
+                courses.append(course.to_dict())
+            TimeTable[keys[i]].append(courses)
             i += 1
         # other
         for id, name in zip(self.other_courses_id, self.other_courses_name):
