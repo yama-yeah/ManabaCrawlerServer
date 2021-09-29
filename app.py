@@ -39,7 +39,7 @@ def sub():
         _id_list=request.form['exception_id']
         exception_id = ast.literal_eval(_id_list)
     manaba = Manaba(userid, password)
-    return jsonify(manaba.get_tasks(exception_id, least))
+    return jsonify(manaba.get_tasks( exception_id_list=exception_id,least_time=least))
 
 
 @app.route("/timetable", methods=["POST"])

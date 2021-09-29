@@ -127,6 +127,7 @@ class Manaba:
 
     def get_tasks(self, exception_id_list=['%void%'], least_time='%void%',except_type=[],except_state=[]):
         tasks = []
+        self.except_type=except_type
         if(self.success):
             raw = self.run_async()
         else:
@@ -143,6 +144,8 @@ class Manaba:
                 continue
             j = 0
             for t in self.TASK_TYPE:
+                if(t[1:] in self.except_type):
+                    continue
                 task_html = BeautifulSoup(
                     raw[i][j], 'lxml',)
                 if(i == 0):
@@ -184,7 +187,7 @@ class Manaba:
                     map(lambda x: self.get_remaining_time(x), task_end_list))
                 for k in range(len(task_start_list)):
                     if(self.check_task_time(task_end_list[k], least_time)):
-                        task = Task(task_id_list[k], task_title_list[k], task_url_list[k], t, course_id, name,
+                        task = Task(task_id_list[k], task_title_list[k], task_url_list[k], t[1:], course_id, name,
                                     task_state_list[k], task_start_list[k], task_end_list[k], remain_list[k])
                         tasks.append(task.to_dict())
                     else:
@@ -231,13 +234,20 @@ class Manaba:
 
     async def get_tasks_html_async(self):
         async def a(id, ss):
-            async with ss.get(BASE_URL+id+self.TASK_TYPE[0]) as resp:
-                q = await resp.text()
-            async with ss.get(BASE_URL+id+self.TASK_TYPE[1]) as resp:
-                r = await resp.text()
-            async with ss.get(BASE_URL+id+self.TASK_TYPE[2]) as resp:
-                s = await resp.text()
-            return (q, r, s)
+            resps=[]
+            if(self.TASK_TYPE[0][1:] not in self.except_type):
+                async with ss.get(BASE_URL+id+self.TASK_TYPE[0]) as resp:
+                    q = await resp.text()
+                resps.append(q)
+            if(self.TASK_TYPE[1][1:] not in self.except_type):
+                async with ss.get(BASE_URL+id+self.TASK_TYPE[1]) as resp:
+                    r = await resp.text()
+                resps.append(r)
+            if(self.TASK_TYPE[2][1:] not in self.except_type):
+                async with ss.get(BASE_URL+id+self.TASK_TYPE[2]) as resp:
+                    s = await resp.text()
+                resps.append(s)
+            return resps
         async with aiohttp.ClientSession() as session:
             ss = session
             await ss.get(BASE_URL+'login')
