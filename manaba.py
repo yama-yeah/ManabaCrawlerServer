@@ -6,7 +6,8 @@ from bs4 import BeautifulSoup
 from typing import List
 import aiohttp
 import asyncio
-
+import re
+import pprint
 BASE_URL = 'https://manaba.fun.ac.jp/ct/'
 
 
@@ -103,16 +104,28 @@ class Manaba:
         return (main.find_all('td', class_='course'), others.find_all('span', class_='courselist-title'))
 
     def get_courses_data(self, main_courses, other_courses):
-        main_name = list(map(lambda x: x.find('a').get_text().replace('\u3000', '') if x.find(
-            'a') else "%void%", main_courses))  # if course is empty, return %void%
+        main_name_temp = list(map(lambda x: x.find_all('a',href=re.compile('^course_')) if x.find(
+            'a') else ["%void%"], main_courses))  # if course is empty, return %void%
+        main_name=list(map(lambda x: list(map(lambda y:y.get_text() if type(y)!=type('')else y,x)), main_name_temp))
+        #pprint.pprint(main_name)
         other_name = list(map(lambda x: x.find(
             'a').get_text().replace('\u3000', ''), other_courses))
-        main_id = list(map(lambda x: x.find('a')['href'] if x.find(
-            'a') else "%void%", main_courses))
+        main_id_temp = list(map(lambda x: x.find_all('a',href=re.compile('^course_')) if x.find(
+            'a') else ["%void%"], main_courses))
+        main_id=list(map(lambda x: list(map(lambda y:y['href'] if type(y)!=type('') else y,x)) , main_id_temp))
         other_id = list(map(lambda x: x.find('a')['href'], other_courses))
         return ((main_id, main_name), (other_id, other_name))
 
-    def get_tasks(self, exception_id_list=['%void%'], least_time='%void%'):
+    def get_courses_timetable_list(self):
+        pass
+
+    def split_main_timetable(self, main_courses):
+        main_name = list(map(lambda x: x.find('a').get_text().replace('\u3000', '') if x.find(
+            'a') else ["%void%"], main_courses))  # if course is empty, return %void%
+
+
+
+    def get_tasks(self, exception_id_list=['%void%'], least_time='%void%',except_type=[],except_state=[]):
         tasks = []
         if(self.success):
             raw = self.run_async()
@@ -121,7 +134,7 @@ class Manaba:
         # get main_tasks
         i = 0
         # print(len(raw),len(raw[0]))
-        for id, name in zip(self.main_courses_id+self.other_courses_id, self.main_courses_name+self.other_courses_name):
+        for id, name in zip(sum(self.main_courses_id,[])+self.other_courses_id, sum(self.main_courses_name,[])+self.other_courses_name):
             # access each task
             if(id == '%void%'):
                 continue
@@ -229,7 +242,7 @@ class Manaba:
             ss = session
             await ss.get(BASE_URL+'login')
             await ss.post(BASE_URL+'login', data=self.login_data)
-            tasks = [a(id, ss) for id in self.main_courses_id +
+            tasks = [a(id, ss) for id in sum(self.main_courses_id,[]) +
                      self.other_courses_id if id != '%void%']
             res = await asyncio.gather(*tasks)
         return res
@@ -268,6 +281,10 @@ class Manaba:
             course = Course(id, name, url)
             TimeTable['Other'].append(course.to_dict())
         return {'timetable': TimeTable, 'status': 'success'}
+
+
+if __name__ == '__main__':
+    pass
 
 
 # print(b)
