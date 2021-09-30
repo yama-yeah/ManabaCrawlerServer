@@ -191,7 +191,7 @@ class Manaba:
                     if(course_id==95955):
                         print(task_state_list[k])
                     if(self.check_wrap(task_end_list[k], least,task_state_list[k],except_state)):
-                        task = Task(task_id_list[k], task_title_list[k], task_url_list[k], t[1:], course_id, name,
+                        task = Task(int(task_id_list[k]), task_title_list[k], task_url_list[k], t[1:], course_id, name,
                                     task_state_list[k], task_start_list[k], task_end_list[k], remain_list[k])
                         tasks.append(task.to_dict())
                     else:
