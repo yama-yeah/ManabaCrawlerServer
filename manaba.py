@@ -125,7 +125,7 @@ class Manaba:
 
 
 
-    def get_tasks(self, exception_id_list=['%void%'], least_time='%void%',except_type=[],except_state=[]):
+    def get_tasks(self, except_id=['%void%'], least='%void%',except_type=[],except_state=[]):
         tasks = []
         self.except_type=except_type
         if(self.success):
@@ -140,7 +140,7 @@ class Manaba:
             if(id == '%void%'):
                 continue
             course_id = int(id.strip('course_'))
-            if(course_id in exception_id_list):
+            if(course_id in except_id):
                 continue
             j = 0
             for t in self.TASK_TYPE:
@@ -164,6 +164,8 @@ class Manaba:
                 # url=BASE_URL+course_id+t+'_'+task_id
                 task_url_list = list(
                     map(lambda x: BASE_URL+x.find('a')['href'], task_html))
+                if(course_id==95955):
+                    print(task_url_list)
                 #print(list(filter(lambda x: x=='https://manaba.fun.ac.jp/ct/course_102052_query_102105', task_url_list)))
                 task_title_list = list(
                     map(lambda x: x.find('a').get_text().replace('\u3000', ''), task_html))
@@ -186,12 +188,14 @@ class Manaba:
                 remain_list = list(
                     map(lambda x: self.get_remaining_time(x), task_end_list))
                 for k in range(len(task_start_list)):
-                    if(self.check_task_time(task_end_list[k], least_time)):
+                    if(course_id==95955):
+                        print(task_state_list[k])
+                    if(self.check_wrap(task_end_list[k], least,task_state_list[k],except_state)):
                         task = Task(task_id_list[k], task_title_list[k], task_url_list[k], t[1:], course_id, name,
                                     task_state_list[k], task_start_list[k], task_end_list[k], remain_list[k])
                         tasks.append(task.to_dict())
                     else:
-                        break
+                        continue
                 j += 1
             i += 1
         return {'tasks': tasks, 'status': 'success'}
@@ -226,11 +230,21 @@ class Manaba:
         if(end == '%void%' or least == '%void%'):
             return True
         end_time = datetime.strptime(end, '%Y-%m-%d %H:%M')
-        least_time = datetime.strptime(least, '%Y-%m-%d %H:%M')
-        if(end_time >= least_time):
+        least = datetime.strptime(least, '%Y-%m-%d %H:%M')
+        if(end_time >= least):
             return True
         else:
             return False
+    
+    def check_task_state(self,state,except_state):
+        if(state in except_state):
+            return False
+        return True
+
+    def check_wrap(self,end,least,state,except_state):
+        if(self.check_task_time(end, least) and self.check_task_state(state,except_state)):
+            return True
+        return False
 
     async def get_tasks_html_async(self):
         async def a(id, ss):

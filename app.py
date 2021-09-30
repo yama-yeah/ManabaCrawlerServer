@@ -32,14 +32,18 @@ def sub():
     userid = request.form['userid']
     password = request.form['password']
     least = '%void%'
-    exception_id = ['%void%']
+    except_id = ['%void%']
+    except_type = []
     if('least' in keys):
         least = request.form['least']
-    if('exception_id' in keys):
-        _id_list=request.form['exception_id']
-        exception_id = ast.literal_eval(_id_list)
+    if('except_id' in keys):
+        _id_list=request.form['except_id']
+        except_id = ast.literal_eval(_id_list)
+    if('except_type' in keys):
+        _tasktype_list=request.form['except_type']
+        except_type = ast.literal_eval(_tasktype_list)
     manaba = Manaba(userid, password)
-    return jsonify(manaba.get_tasks( exception_id_list=exception_id,least_time=least))
+    return jsonify(manaba.get_tasks( except_id=except_id,least=least,except_type=except_type))
 
 
 @app.route("/timetable", methods=["POST"])
