@@ -137,18 +137,18 @@ class Manaba:
         # print(len(raw),len(raw[0]))
         for id, name in zip(sum(self.main_courses_id,[])+self.other_courses_id, sum(self.main_courses_name,[])+self.other_courses_name):
             # access each task
-            if(id == '%void%'):
+            if id == '%void%':
                 continue
             course_id = int(id.strip('course_'))
-            if(course_id in except_id):
+            if course_id in except_id:
                 continue
             j = 0
             for t in self.TASK_TYPE:
-                if(t[1:] in self.except_type):
+                if t[1:] in self.except_type:
                     continue
                 task_html = BeautifulSoup(
                     raw[i][j], 'lxml',)
-                if(i == 0):
+                if i == 0:
                     #print(BeautifulSoup(raw[-3][2], 'lxml',).find_all('tr')[1:-1][0].find_all('td',class_='center')[2:])
                     pass
                 # salvage task_id,task_title,task_url,state,start,end,remain,description
@@ -164,7 +164,7 @@ class Manaba:
                 # url=BASE_URL+course_id+t+'_'+task_id
                 task_url_list = list(
                     map(lambda x: BASE_URL+x.find('a')['href'], task_html))
-                if(course_id==95955):
+                if course_id==95955:
                     print(task_url_list)
                 #print(list(filter(lambda x: x=='https://manaba.fun.ac.jp/ct/course_102052_query_102105', task_url_list)))
                 task_title_list = list(
@@ -173,9 +173,9 @@ class Manaba:
                     map(lambda x: x.split('_')[-1], task_url_list))
                 task_state_list = list(
                     map(lambda x: self.get_task_state(x), task_html))
-                if(t == '_query'):
+                if t == '_query':
                     p = 1
-                elif(t == '_report'):
+                elif t == '_report':
                     p = 2
                 else:
                     p = 1
@@ -188,9 +188,9 @@ class Manaba:
                 remain_list = list(
                     map(lambda x: self.get_remaining_time(x), task_end_list))
                 for k in range(len(task_start_list)):
-                    if(course_id==95955):
+                    if course_id==95955:
                         print(task_state_list[k])
-                    if(self.check_wrap(task_end_list[k], least,task_state_list[k],except_state)):
+                    if self.check_wrap(task_end_list[k], least,task_state_list[k],except_state):
                         task = Task(int(task_id_list[k]), task_title_list[k], task_url_list[k], t[1:], course_id, name,
                                     task_state_list[k], task_start_list[k], task_end_list[k], remain_list[k])
                         tasks.append(task.to_dict())
