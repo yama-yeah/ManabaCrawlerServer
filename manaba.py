@@ -125,7 +125,7 @@ class Manaba:
 
 
 
-    def get_tasks(self, except_id=['%void%'], least='%void%',except_type=[],except_state=[]):
+    def get_tasks(self, except_id=['%void%'], least='%void%',except_type=[],except_state=['提出完了','提出失敗']):
         tasks = []
         self.except_type=except_type
         if(self.success):
