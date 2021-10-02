@@ -1,6 +1,6 @@
 import re
 from manaba import Manaba
-from flask import Flask, jsonify, abort, make_response, request
+from flask import Flask, json, jsonify, abort, make_response, request
 import os
 import sys
 from werkzeug.exceptions import Forbidden, HTTPException, NotFound, RequestTimeout, Unauthorized
@@ -28,37 +28,39 @@ def hellotime():
 @app.route("/", methods=["POST"])
 def sub():
     #{'userid': "ID" ,'password': "PASSWORD"}
-    keys = request.form.keys()
-    userid = request.form['userid']
-    password = request.form['password']
+    json = request.get_json()
+    keys=json.keys()
+    userid = json['userid']
+    password = json['password']
     least = '%void%'
     except_id = ['%void%']
     except_type = []
     if('least' in keys):
-        least = request.form['least']
+        least = json['least']
     if('except_id' in keys):
-        _id_list=request.form['except_id']
-        except_id = ast.literal_eval(_id_list)
+        except_id=json['except_id']
+        #except_id = ast.literal_eval(_id_list)
     if('except_type' in keys):
-        _tasktype_list=request.form['except_type']
+        _tasktype_list=json['except_type']
         except_type = ast.literal_eval(_tasktype_list)
     manaba = Manaba(userid, password)
+    #return request.get_data()
     return jsonify(manaba.get_tasks( except_id=except_id,least=least,except_type=except_type))
 
 
 @app.route("/timetable", methods=["POST"])
 def time():
     #{'userid': "ID" ,'password': "PASSWORD"}
-    userid = request.form['userid']
-    password = request.form['password']
+    userid = request.json['userid']
+    password = request.json['password']
     manaba = Manaba(userid, password)
     return jsonify(manaba.get_timetable())
 
 @app.route('/login',methods=['POST'])
 def login():
     #{'userid': "ID" ,'password': "PASSWORD"}
-    userid = request.form['userid']
-    password = request.form['password']
+    userid = request.json['userid']
+    password = request.json['password']
     manaba = Manaba(userid, password)
     status={'status':''}
     if(manaba.check_login()):
